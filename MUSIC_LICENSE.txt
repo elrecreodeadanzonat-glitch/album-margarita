@@ -1,0 +1,40 @@
+MÚSICA DEL «LIBRO DE MAMÁ»
+==========================
+Fecha de consulta de las licencias: 2026-09-30
+Las cuatro pistas son instrumentales y están publicadas en Pixabay bajo la
+Pixabay Content License (https://pixabay.com/service/license-summary/):
+uso libre, personal o comercial, sin atribución obligatoria. La licencia prohíbe
+redistribuir la música «por sí sola» (standalone); aquí solo se usa como música de fondo del sitio.
+Aun así se da crédito discreto al final del libro.
+
+Los archivos en public/audio/ son las mismas grabaciones, solo normalizadas en volumen
+(-18 LUFS) y comprimidas a MP3 128 kbps para web. No se alteró la música.
+
+1) public/audio/01-uplifting-piano-pop-flow.mp3
+   Título:  Uplifting Piano Pop Flow Music
+   Autor:   JuliusH
+   Página:  https://pixabay.com/music/dance-uplifting-piano-pop-flow-music-526164/
+   Archivo: https://cdn.pixabay.com/download/audio/2026/04/28/audio_aa62eab508.mp3
+   Licencia: Pixabay Content License («Free for use under the Pixabay Content License»)
+
+2) public/audio/02-neon-piano-lane.mp3
+   Título:  Neon Piano Lane
+   Autor:   Turning Pages (Turning_Pages)
+   Página:  https://pixabay.com/music/pop-neon-piano-lane-432954/
+   Archivo: https://cdn.pixabay.com/download/audio/2025/11/07/audio_755a76e52b.mp3
+   Licencia: Pixabay Content License («Free for use under the Pixabay Content License»)
+
+3) public/audio/03-upbeat-happy-indie-pop.mp3
+   Título:  Upbeat Happy Indie Pop
+   Autor:   Vivaleum
+   Página:  https://pixabay.com/music/indie-pop-upbeat-happy-indie-pop-186815/
+   Archivo: https://cdn.pixabay.com/download/audio/2024/01/18/audio_164e3819f5.mp3
+   Licencia: Pixabay Content License («Free for use under the Pixabay Content License»).
+   Nota: la pista está registrada en Content ID (afecta solo a videos subidos a YouTube/Facebook, no a este sitio).
+
+4) public/audio/04-my-happy-dance.mp3
+   Título:  My Happy Dance – piano upbeat optimistic joyful guitar instrumental
+   Autor:   melodyayresgriffiths
+   Página:  https://pixabay.com/music/pop-my-happy-dance-piano-upbeat-optimistic-joyful-guitar-instrumental-144370/
+   Archivo: https://cdn.pixabay.com/download/audio/2023/03/29/audio_02c99e6bfb.mp3
+   Licencia: Pixabay Content License («Free for use under the Pixabay Content License»)

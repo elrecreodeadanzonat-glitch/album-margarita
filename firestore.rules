@@ -1,0 +1,121 @@
+rules_version = '2';
+
+// Álbum de Margarita — Firestore security rules (project album-margarita, separate from «Libro de mamá»).
+//
+// Private album: everything lives under albums/{key}, where key is long and random. Nobody can list albums,
+// so only those who know the key get in. The password unlocks the key: the browser turns it into a long code
+// (PBKDF2) that names a lock, vault/{code} → { albumKey }. Inside the album, people may add photos, videos,
+// comments and arrangements, rotate, hide and bring back; nothing can be deleted.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function data() { return request.resource.data; }
+    function isNew() { return data().createdAt == request.time; }
+    function str(v, min, max) { return v is string && v.size() >= min && v.size() <= max; }
+    function imageDataUrl(v, max) {
+      return str(v, 30, max) && v.matches('^data:image/(webp|jpeg);base64,[A-Za-z0-9+/=]+$');
+    }
+
+    // the password's lock: get it by its exact code; nobody can list them
+    match /vault/{code} {
+      allow get: if true;
+      allow list: if false;
+      // a new password: only someone already inside (who knows the album key) can make one
+      allow create: if code.matches('^[0-9a-f]{64}$')
+        && data().keys().hasOnly(['albumKey', 'createdAt'])
+        && data().albumKey is string && data().albumKey.matches('^a[a-z0-9]{20,40}$')
+        && exists(/databases/$(database)/documents/albums/$(data().albumKey))
+        && isNew();
+      allow update: if false;
+      // the old password goes away when it is changed (knowing the code = knowing that password)
+      allow delete: if true;
+    }
+
+    match /albums/{key} {
+      allow get: if true;
+      allow list: if false;
+      allow create, delete: if false;
+      // the album's name and texts
+      allow update: if data().diff(resource.data).affectedKeys().hasOnly(['title', 'intro', 'outro'])
+        && str(data().title, 1, 80) && str(data().intro, 0, 300) && str(data().outro, 0, 300);
+
+      match /photos/{id} {
+        allow read: if true;
+        allow create: if id.matches('^c[a-z0-9]{12,40}$')
+          && data().keys().hasOnly(['kind', 'width', 'height', 'color', 'thumb', 'author', 'caption', 'rotation', 'hidden', 'createdAt', 'duration', 'chunks', 'mime'])
+          && data().keys().hasAll(['kind', 'width', 'height', 'color', 'thumb', 'author', 'caption', 'rotation', 'hidden', 'createdAt'])
+          && data().width is int && data().width > 0 && data().width <= 10000
+          && data().height is int && data().height > 0 && data().height <= 10000
+          && data().color is string && data().color.matches('^#[0-9a-f]{6}$')
+          && imageDataUrl(data().thumb, 60000)
+          && str(data().author, 0, 60)
+          && str(data().caption, 0, 300)
+          && data().rotation == 0
+          && data().hidden == false
+          && isNew()
+          && existsAfter(/databases/$(database)/documents/albums/$(key)/photoImages/$(id))
+          && ((data().kind == 'photo' && !data().keys().hasAny(['duration', 'chunks', 'mime']))
+            || (data().kind == 'video'
+              && data().duration is number && data().duration > 0 && data().duration <= 120
+              && data().chunks is int && data().chunks >= 1 && data().chunks <= 40
+              && data().mime in ['video/mp4', 'video/webm']
+              && exists(/databases/$(database)/documents/albums/$(key)/videoChunks/$(id + '_' + string(data().chunks - 1)))));
+        // rotate, hide, bring back, caption — never delete
+        allow update: if data().diff(resource.data).affectedKeys().hasOnly(['hidden', 'rotation', 'caption'])
+          && data().hidden is bool
+          && data().rotation in [0, 90, 180, 270]
+          && str(data().caption, 0, 300);
+        allow delete: if false;
+      }
+
+      match /photoImages/{id} {
+        allow read: if true;
+        allow create: if data().keys().hasOnly(['data', 'createdAt'])
+          && imageDataUrl(data().data, 1000000)
+          && isNew()
+          && existsAfter(/databases/$(database)/documents/albums/$(key)/photos/$(id));
+        allow update, delete: if false;
+      }
+
+      // a video, in pieces of up to ~1 MB (each one a document); its page is created after the last piece
+      match /videoChunks/{piece} {
+        allow read: if true;
+        allow create: if piece.matches('^c[a-z0-9]{12,40}_[0-9]{1,2}$')
+          && data().keys().hasOnly(['data', 'n', 'createdAt'])
+          && data().data is bytes && data().data.size() >= 1 && data().data.size() <= 1000000
+          && data().n is int && data().n >= 0 && data().n < 40
+          && piece.split('_')[1] == string(data().n)
+          && isNew();
+        allow update, delete: if false;
+      }
+
+      match /comments/{id} {
+        allow read: if true;
+        allow create: if id.matches('^k[a-z0-9]{12,40}$')
+          && data().keys().hasOnly(['photoId', 'text', 'author', 'createdAt', 'hidden'])
+          && data().keys().hasAll(['photoId', 'text', 'author', 'createdAt', 'hidden'])
+          && data().photoId is string && data().photoId.matches('^[A-Za-z0-9_-]{1,48}$')
+          && str(data().text, 1, 1000)
+          && str(data().author, 0, 60)
+          && data().hidden == false
+          && isNew();
+        allow update: if data().diff(resource.data).affectedKeys().hasOnly(['hidden'])
+          && data().hidden is bool;
+        allow delete: if false;
+      }
+
+      // the order of the pages: each arrangement is a new document (history, undo)
+      match /orders/{id} {
+        allow read: if true;
+        allow create: if id.matches('^o[a-z0-9]{12,40}$')
+          && data().keys().hasOnly(['ids', 'author', 'createdAt'])
+          && data().keys().hasAll(['ids', 'author', 'createdAt'])
+          && str(data().ids, 1, 60000)
+          && data().ids.matches('^[A-Za-z0-9_-]{1,48}(,[A-Za-z0-9_-]{1,48})*$')
+          && str(data().author, 0, 60)
+          && isNew();
+        allow update, delete: if false;
+      }
+    }
+  }
+}
