@@ -48,6 +48,7 @@ test('sin «Recordarme», otra pestaña vuelve a pedir la contraseña', async ({
 
 test('si la contraseña cambió en otro aparato, la vuelve a pedir y lo dice', async ({ page, cloud }) => {
   await login(page);
+  await page.waitForLoadState('networkidle'); // the album's own first check is done
   cloud.docs.delete(`vault/${lockCode(TEST_PASSWORD)}`);
   await page.reload();
   await expect(page.getByTestId('gate')).toBeVisible({ timeout: 15_000 });
